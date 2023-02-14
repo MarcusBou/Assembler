@@ -13,8 +13,25 @@ namespace VMTranslator
     {
         private int labelcount;
         private int tempStartScope = 5;
+        private Stack<string> stack = new Stack<string>();
+        public List<string> TranslateMultiple(List<string> vmCode)
+        {
+            List<string> result = new List<string>();
+            result.AddRange(new string[]
+            {
+                "@256",
+                "D=A",
+                "@0",
+                "M=D"
+            });
+
+            vmCode.Insert(0, "call Sys.init 0");
+            result.AddRange(TranslateToASM(vmCode));
+            return result;
+        }
         public List<string> TranslateToASM(List<string> vmCode)
         {
+            stack.Push("static");
             List<string> HDLCode = new List<string>();
             labelcount = 0;
             for (int i = 0; i < vmCode.Count; i++)
@@ -80,7 +97,7 @@ namespace VMTranslator
                     return new string[]
                     {
                         "// Push static" + value,
-                        "@static." + value,
+                        $"@{stack.Peek()}.{value}",
                         "D=M",
                         "@SP",
                         "A=M",
@@ -231,7 +248,7 @@ namespace VMTranslator
                         "@SP",
                         "AM=M-1",
                         "D=M",
-                        "@static." + value,
+                        $"@{stack.Peek()}.{value}",
                         "M=D",
                     };
                 case "local":
@@ -495,6 +512,7 @@ namespace VMTranslator
 
         public string[] CallCommand(string command, string args)
         {
+            stack.Push(command);
             List<string> tempstring = new List<string>();
             string[] temp = new string[] { "@LCL", "@ARG", "@THIS", "@THAT" };
             tempstring.AddRange(new string[]
@@ -545,6 +563,10 @@ namespace VMTranslator
 
         public string[] ReturnCommand()
         {
+            if (stack.Count > 1)
+            {
+                stack.Pop();
+            }
             return new string[]{
                 "",
                 "@LCL",

@@ -25,7 +25,7 @@ namespace FileHandler
             return cleanlines;
         }
 
-        public List<string> GetFiles(string str, string extension, string specialfile)
+        public List<string> GetFiles(string str, string extension)
         {
             string[] files = Directory.GetFiles(str);
             List<string> vmfiles = new List<string>();
@@ -35,12 +35,6 @@ namespace FileHandler
                 {
                     vmfiles.Add(files[i]);
                 }
-            }
-
-            if (vmfiles.Contains(str + "\\" + specialfile))
-            {
-                vmfiles.Remove(str + "\\" + specialfile);
-                vmfiles.Insert(0, str + "\\" + specialfile);
             }
 
             List<string> lines = new List<string>();
