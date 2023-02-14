@@ -28,7 +28,7 @@ namespace VMTranslator
                 }
                 else if(Directory.Exists(str)) // if the path is a directory
                 {
-                    List<string> lines = fhandler.GetFiles(str, ".vm", "sys.vm");
+                    List<string> lines = fhandler.GetFiles(str, ".vm", "Sys.vm");
                     List<string> converted = translator.TranslateToASM(lines);
                     fhandler.PrintFile(str, converted, ".asm", str);
                 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
@@ -16,7 +17,6 @@ namespace VMTranslator
         {
             List<string> HDLCode = new List<string>();
             labelcount = 0;
-            HDLCode.AddRange(new string[] { "@256", "D=A", "@SP", "M=D" });
             for (int i = 0; i < vmCode.Count; i++)
             {
                 string[] line = vmCode[i].Split(" ");
@@ -48,13 +48,14 @@ namespace VMTranslator
                 }
                 else if (line[0].Equals("call"))
                 {
-                    command = CallCommand(line[1]);
+                    command = CallCommand(line[1], line[2]);
                 }
                 else
                 {
                     command = ActionCommand(line[0]);
                 }
                 HDLCode.AddRange(command);
+                HDLCode.Add("");
             }
             HDLCode.AddRange(new string[] { "(END)", "@END", "0;JMP" });
             return HDLCode;
@@ -209,12 +210,19 @@ namespace VMTranslator
                     return new string[]
                     {
                         "// Pop temp " + value,
+                        "@" + value,
+                        "D=A",
+                        "@5",
+                        "D=D+A",
+                        "@R13",
+                        "M=D",
                         "@SP",
                         "M=M-1",
-                        "A=M",
+                        "A=M ",
                         "D=M",
-                        "@" + (tempStartScope + value),
-                        "M=D"
+                        "@R13",
+                        "A=M",
+                        "M=D",
                     };
                 case "static":
                     return new string[]
@@ -485,15 +493,19 @@ namespace VMTranslator
             return result.ToArray();
         }
 
-        public string[] CallCommand(string command)
+        public string[] CallCommand(string command, string args)
         {
             List<string> tempstring = new List<string>();
             string[] temp = new string[] { "@LCL", "@ARG", "@THIS", "@THAT" };
-            tempstring.AddRange(new string[]{
+            tempstring.AddRange(new string[]
+            {
+                $"@RETURN_ADDR" + labelcount,
+                "D=A",
                 "@SP",
-                "D=M",
-                "@ATRVALUE",
+                "A=M",
                 "M=D",
+                "@SP",
+                "M=M+1",
             });
             for (int i = 0; i < temp.Length; i++)
             {
@@ -509,45 +521,102 @@ namespace VMTranslator
                 });
             }
             tempstring.AddRange(new string[] {
+                "// ARG = SP - 5 -nArgs",
+                "@SP",
+                "D=M",
+                "@5",
+                "D=D-A",
+                "@" + args,
+                "D=D-A",
+                "@ARG",
+                "M=D",
+                "// LCL = SP",
+                "@SP",
+                "D=M",
+                "@LCL",
+                "M=D",
                 "@" + command,
-                "0;JMP"
+                "0;JMP",
+                $"(RETURN_ADDR{labelcount})",
             });
+            labelcount++;
             return tempstring.ToArray();
         }
 
         public string[] ReturnCommand()
         {
             return new string[]{
+                "",
                 "@LCL",
                 "D=M",
+                "// endFrame = LCL",
                 "@R13",
                 "M=D",
-                "D=M-5",
+                "@5",
+                "D=A",
+                "@R13",
+                "D=M-D",
+                "A=D",
+                "D=M",
+                "// retAddr = *(endFrame-5)",
                 "@R14",
                 "M=D",
+                "// *ARG = pop()",
                 "@SP",
-                "M=A",
+                "M=M-1",
+                "@SP",
+                "A=M ",
                 "D=M",
                 "@ARG",
                 "A=M",
                 "M=D",
+                "// SP = ARG + 1",
                 "@ARG",
                 "D=M",
                 "@SP",
-                "M=A",
                 "M=D+1",
+                "// THAT = *(endFrame - 1)",
+                "",
+                "@1",
+                "D=A",
                 "@R13",
+                "D=M-D",
+                "A=D",
                 "D=M",
                 "@THAT",
-                "M=D-1",
-                "@THIS",
-                "M=D-2",
-                "@ARG",
-                "M=D-3",
-                "@LCL",
-                "M=D-4",
-                "@R14",
+                "M=D",
+                "// THIS = *(endFrame - 2)",
+                "",
+                "@2",
+                "D=A",
+                "@R13",
+                "D=M-D",
+                "A=D",
                 "D=M",
+                "@THIS",
+                "M=D",
+                "// ARG = *(endFrame - 3)",
+                "",
+                "@3",
+                "D=A",
+                "@R13",
+                "D=M-D",
+                "A=D",
+                "D=M",
+                "@ARG",
+                "M=D",
+                "// LCL = *(endFrame - 4)",
+                "",
+                "@4",
+                "D=A",
+                "@R13",
+                "D=M-D",
+                "A=D",
+                "D=M",
+                "@LCL",
+                "M=D",
+                "@R14",
+                "A=M",
                 "0;JMP",
             };
         }
