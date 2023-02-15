@@ -271,7 +271,7 @@ namespace VMTranslator
                 case "argument":
                     return new string[]
                     {
-                        "// Pop argument " + value,
+                        "// Pop argument     " + value,
                         "@ARG",
                         "D=M",
                         "@" + value,
@@ -474,12 +474,11 @@ namespace VMTranslator
             {
                 return new string[]{
                     "@SP",
-                    "AM=M-1",
+                    "M=M-1",
+                    "A=M",
                     "D=M",
-                    "A=A-1",
-                    "D=M-D",
                     "@" + label,
-                    "D; JGT",
+                    "D; JNE"
                 };
             }
             else
