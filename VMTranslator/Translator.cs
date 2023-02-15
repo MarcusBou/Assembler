@@ -494,6 +494,7 @@ namespace VMTranslator
         public string[] FunctionCommand(string command, int argsAmount)
         {
             List<string> result = new List<string>{$"({command})"};
+            stack.Push(command.Split(".")[0]);
             for (int i = 0; i < argsAmount; i++)
             {
                 result.AddRange(new string[]
@@ -512,7 +513,6 @@ namespace VMTranslator
 
         public string[] CallCommand(string command, string args)
         {
-            stack.Push(command);
             List<string> tempstring = new List<string>();
             string[] temp = new string[] { "@LCL", "@ARG", "@THIS", "@THAT" };
             tempstring.AddRange(new string[]
@@ -568,10 +568,9 @@ namespace VMTranslator
                 stack.Pop();
             }
             return new string[]{
-                "",
+                "// Return",
                 "@LCL",
                 "D=M",
-                "// endFrame = LCL",
                 "@R13",
                 "M=D",
                 "@5",
@@ -580,10 +579,8 @@ namespace VMTranslator
                 "D=M-D",
                 "A=D",
                 "D=M",
-                "// retAddr = *(endFrame-5)",
                 "@R14",
                 "M=D",
-                "// *ARG = pop()",
                 "@SP",
                 "M=M-1",
                 "@SP",
@@ -592,13 +589,10 @@ namespace VMTranslator
                 "@ARG",
                 "A=M",
                 "M=D",
-                "// SP = ARG + 1",
                 "@ARG",
                 "D=M",
                 "@SP",
                 "M=D+1",
-                "// THAT = *(endFrame - 1)",
-                "",
                 "@1",
                 "D=A",
                 "@R13",
@@ -607,8 +601,6 @@ namespace VMTranslator
                 "D=M",
                 "@THAT",
                 "M=D",
-                "// THIS = *(endFrame - 2)",
-                "",
                 "@2",
                 "D=A",
                 "@R13",
@@ -617,8 +609,6 @@ namespace VMTranslator
                 "D=M",
                 "@THIS",
                 "M=D",
-                "// ARG = *(endFrame - 3)",
-                "",
                 "@3",
                 "D=A",
                 "@R13",
@@ -627,8 +617,6 @@ namespace VMTranslator
                 "D=M",
                 "@ARG",
                 "M=D",
-                "// LCL = *(endFrame - 4)",
-                "",
                 "@4",
                 "D=A",
                 "@R13",
